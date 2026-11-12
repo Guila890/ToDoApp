@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export default function App() {
   const [count, setCount] = useState(0);
@@ -8,20 +9,42 @@ export default function App() {
   const [listaTarefas, setListaTarefas] = useState([]);
 
   const adicionarTarefa = () => {
-    if (tarefaAtual.trim() === '') return; // Evita adicionar tarefas vazias
     setListaTarefas([...listaTarefas, tarefaAtual]);
+    const novaLista = [...listaTarefas, tarefaAtual];
+    setListaTarefas(novaLista);
+    salvarDadosLocal(novaLista);
     setTarefaAtual('');
   };
 
-  const salvarTeste = async () => {
-    await AsyncStorage.setItem('chave_secreta', 'Felipe');
-    console.log('Teste salvo no cofre!');
-}
+  const salvarDadosLocal = async (listaDeDados) => {
+    try {
+      const dadosJSON = JSON.stringify(listaDeDados);
+      
+      await AsyncStorage.setItem('minhas_tarefas', dadosJSON);
+    } catch (e) {
+      console.error("Erro ao salvar dados", e);
+    }
+  }
+
+  const resgatarDadosLocal = async () => {
+    try {
+      const dadosJSONLidos = await AsyncStorage.getItem('minhas_tarefas');
+      if (dadosJSONLidos !== null) {
+          const listaViva = JSON.parse(dadosJSONLidos);
+          setListaTarefas(listaViva);
+      }
+    } catch (e) {
+      console.error("Erro ao resgatar", e);
+    }
+  }
+
+  useEffect(() => {
+    resgatarDadosLocal();
+  }, []); 
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Tarefas</Text>
-      
       <View style={styles.coresContainer}>
         <View style={styles.vermelho} />
         <View style={styles.verde} />
@@ -39,13 +62,10 @@ export default function App() {
           onChangeText={setTarefaAtual}
         />
 
-        <TouchableOpacity onPress={() => {adicionarTarefa(), salvarTeste()}} style={styles.botaoContainer}>
-          <Text style={styles.botao}>Adicionar</Text>
+        <TouchableOpacity onPress={() => {adicionarTarefa()}} style={styles.botaoContainer}>
+          <Text style={styles.botao}>+</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setCount(count + 1)} style={styles.botaoContainer}>
-          <Text style={styles.botao}> + </Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.lista}>
